@@ -46,6 +46,7 @@ Uiteraard ga je er ook zorgen dat jouw controllers en services met die DTO's kun
 - Je hebt de juiste dependencies aan het project gekoppeld (ook voor validatie).
 - Je hebt minimaal één record van beide entiteiten in je data.sql staan.
 - Je hebt een export van Postman met up-to-date requests voor beide entiteiten
+- Je hebt een eigen `RecordNotFoundException` en een `GlobalExceptionHandler` die deze en de DTO validatie exception opvangt en de gebruiker een goede berichtgeving terugstuurt.
 
 
 # Stappenplan
@@ -159,9 +160,34 @@ Als voorbeeld hier de aangepaste POST mapping van de GenreController:
 
 Vergeet niet om de `@Valid` annotatie te gebruiken, anders worden je validatie regels niet gevalideerd.
 
+## Stap 7 (Exceptions)
 
+Maak een `exceptions` package.
 
-## Stap 7 (Postman)
+Maak in de `exceptions` package een `RecordNotFoundException`.
+
+Zorg er voor dat je op alle plekken waar je een `Optional<entiteit>` uit de repository ophaalt, je een `RecordNotFoundException` opgooit wanneer de Optional leeg blijkt te zijn. 
+
+Maak in de `helpers` package een `GlobalExceptionHandler`-klasse met de juiste annotatie er boven. 
+
+Maak in deze GlobalExceptionHandler-klasse ten minste 2 methodes. Één methode die de `MethodArgumentNotValidException` opvangt en één methode die de  `RecordNotFoundException` opvangt (wanneer de gebruiker een validatieregel overtreed door foute json input  mee te geven). De eerste methode mag als volgt implementeren: 
+
+```java
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<List<String>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        List<String> violations = ex
+                .getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .toList();
+        return ResponseEntity.badRequest().body(violations);
+    }
+```	
+
+De tweede methode mag je implementeren door een 404 statuscode te returnen. Een tekstuele berichtgeving daarbij is niet nodig, maar mag wel.
+
+## Stap 8 (Postman)
 Voeg een actuele export van je postman collectie toe aan de `resources` map.
 
 Waarschijnlijk kun je hier dezelfde postman export voor gebruiken als in de vorige opdracht, maar controleer het wel even. 
